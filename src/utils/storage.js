@@ -5,19 +5,29 @@ const REG_KEY = "registrations";
 const DEMO_KEY = "demoDataLoaded";
 
 export function getRegistrations() {
-  const data = localStorage.getItem(REG_KEY);
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem(REG_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    console.error("Error reading registrations:", e);
+    return [];
+  }
 }
 
 export function saveRegistration(reg) {
-  const regs = getRegistrations();
-  regs.push(reg);
-  localStorage.setItem(REG_KEY, JSON.stringify(regs));
+  try {
+    const regs = getRegistrations();
+    regs.push(reg);
+    localStorage.setItem(REG_KEY, JSON.stringify(regs));
+  } catch (e) {
+    console.error("Error saving registration:", e);
+  }
 }
 
 export function isEmailRegistered(email) {
+  if (!email) return false;
   const regs = getRegistrations();
-  return regs.some(r => r.email.toLowerCase() === email.toLowerCase());
+  return regs.some(r => r.email && r.email.toLowerCase() === email.trim().toLowerCase());
 }
 
 export function generateReferralCode() {
@@ -74,8 +84,13 @@ export function getRegistrationsByDay() {
   const regs = getRegistrations();
   const map = {};
   regs.forEach(r => {
-    const date = new Date(r.timestamp).toISOString().split("T")[0];
-    map[date] = (map[date] || 0) + 1;
+    if (!r.timestamp) return;
+    try {
+      const date = new Date(r.timestamp).toISOString().split("T")[0];
+      map[date] = (map[date] || 0) + 1;
+    } catch {
+      // Ignore invalid date strings
+    }
   });
   // Convert to array sorted by date
   return Object.entries(map)
